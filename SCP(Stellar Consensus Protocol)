@@ -2,7 +2,8 @@
 
 import hashlib
 import time
-from typing import List, Dict, Set
+from typing import List, Set
+from ecdsa import SigningKey, VerifyingKey, SECP256k1
 
 class Block:
     def __init__(self, index: int, timestamp: str, data: str, previous_hash: str):
@@ -11,18 +12,39 @@ class Block:
         self.data = data
         self.previous_hash = previous_hash
         self.hash = self.calculate_hash()
+        self.signature = None  # Signature for block validation
 
     def calculate_hash(self) -> str:
         return hashlib.sha256(f"{self.index}{self.timestamp}{self.data}{self.previous_hash}".encode()).hexdigest()
 
+    def sign_block(self, private_key: SigningKey):
+        """
+        Sign the block with the private key of the proposing node.
+        """
+        if not private_key:
+            raise ValueError("Private key is required to sign the block.")
+        self.signature = private_key.sign(self.hash.encode())
+
+    def verify_signature(self, public_key: VerifyingKey) -> bool:
+        """
+        Verify the block signature with the public key.
+        """
+        if not self.signature:
+            raise ValueError("No signature found on this block.")
+        return public_key.verify(self.signature, self.hash.encode())
+
 class Node:
     def __init__(self, node_id: str):
         self.node_id = node_id
-        self.neighbors: Set['Node'] = set()  # Connected nodes
+        self.private_key = SigningKey.generate(curve=SECP256k1)  # Private key for signing
+        self.public_key = self.private_key.get_verifying_key()  # Public key for verification
+        self.neighbors: Set['Node'] = set()
         self.blockchain: List[Block] = [self.create_genesis_block()]
 
     def create_genesis_block(self) -> Block:
-        return Block(0, time.time(), "Genesis Block", "0")
+        genesis_block = Block(0, time.time(), "Genesis Block", "0")
+        genesis_block.sign_block(self.private_key)  # Sign the genesis block
+        return genesis_block
 
     def get_latest_block(self) -> Block:
         return self.blockchain[-1]
@@ -34,23 +56,28 @@ class Node:
             data,
             self.get_latest_block().hash
         )
+        new_block.sign_block(self.private_key)  # Sign the new block
         return new_block
 
-    def add_block(self, block: Block):
-        if self.validate_block(block):
-            self.blockchain.append(block)
-
     def validate_block(self, block: Block) -> bool:
+        """
+        Validate block signature and hash integrity.
+        """
         latest_block = self.get_latest_block()
         if block.previous_hash != latest_block.hash:
+            print(f"Invalid previous hash for block {block.index}.")
             return False
         if block.hash != block.calculate_hash():
+            print(f"Invalid hash for block {block.index}.")
+            return False
+        if not block.verify_signature(block.public_key):
+            print(f"Invalid signature for block {block.index}.")
             return False
         return True
 
 class SCPConsensus:
     def __init__(self):
-        self.network: Dict[str, Node] = {}  # Node registry
+        self.network: dict[str, Node] = {}
 
     def register_node(self, node: Node):
         self.network[node.node_id] = node
@@ -61,8 +88,7 @@ class SCPConsensus:
 
     def federated_voting(self, proposed_block: Block, proposing_node: str) -> bool:
         """
-        Simulates voting among nodes using SCP. 
-        A block is accepted if >50% of the node's neighbors agree.
+        Simulates federated voting with signature validation.
         """
         proposing_node_obj = self.network[proposing_node]
         votes = 0
@@ -114,4 +140,4 @@ if __name__ == "__main__":
     for node_id, node in consensus.network.items():
         print(f"\nBlockchain for {node_id}:")
         for block in node.blockchain:
-            print(f"Index: {block.index}, Hash: {block.hash}, Data: {block.data}")
+            print(f"Index: {block.index}, Hash: {block.hash}, Data: {block.data}, Signature: {block.signature is not None}")
