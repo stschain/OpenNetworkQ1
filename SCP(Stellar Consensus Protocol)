@@ -1,0 +1,117 @@
+#PiNetwork Consensus
+
+import hashlib
+import time
+from typing import List, Dict, Set
+
+class Block:
+    def __init__(self, index: int, timestamp: str, data: str, previous_hash: str):
+        self.index = index
+        self.timestamp = timestamp
+        self.data = data
+        self.previous_hash = previous_hash
+        self.hash = self.calculate_hash()
+
+    def calculate_hash(self) -> str:
+        return hashlib.sha256(f"{self.index}{self.timestamp}{self.data}{self.previous_hash}".encode()).hexdigest()
+
+class Node:
+    def __init__(self, node_id: str):
+        self.node_id = node_id
+        self.neighbors: Set['Node'] = set()  # Connected nodes
+        self.blockchain: List[Block] = [self.create_genesis_block()]
+
+    def create_genesis_block(self) -> Block:
+        return Block(0, time.time(), "Genesis Block", "0")
+
+    def get_latest_block(self) -> Block:
+        return self.blockchain[-1]
+
+    def propose_block(self, data: str) -> Block:
+        new_block = Block(
+            len(self.blockchain),
+            time.time(),
+            data,
+            self.get_latest_block().hash
+        )
+        return new_block
+
+    def add_block(self, block: Block):
+        if self.validate_block(block):
+            self.blockchain.append(block)
+
+    def validate_block(self, block: Block) -> bool:
+        latest_block = self.get_latest_block()
+        if block.previous_hash != latest_block.hash:
+            return False
+        if block.hash != block.calculate_hash():
+            return False
+        return True
+
+class SCPConsensus:
+    def __init__(self):
+        self.network: Dict[str, Node] = {}  # Node registry
+
+    def register_node(self, node: Node):
+        self.network[node.node_id] = node
+
+    def add_connection(self, node_a: str, node_b: str):
+        self.network[node_a].neighbors.add(self.network[node_b])
+        self.network[node_b].neighbors.add(self.network[node_a])
+
+    def federated_voting(self, proposed_block: Block, proposing_node: str) -> bool:
+        """
+        Simulates voting among nodes using SCP. 
+        A block is accepted if >50% of the node's neighbors agree.
+        """
+        proposing_node_obj = self.network[proposing_node]
+        votes = 0
+        for neighbor in proposing_node_obj.neighbors:
+            if neighbor.validate_block(proposed_block):
+                votes += 1
+
+        required_votes = len(proposing_node_obj.neighbors) // 2 + 1
+        return votes >= required_votes
+
+    def propose_and_commit(self, node_id: str, data: str):
+        proposing_node = self.network[node_id]
+        proposed_block = proposing_node.propose_block(data)
+
+        if self.federated_voting(proposed_block, node_id):
+            print(f"Block accepted by majority: {proposed_block.hash}")
+            for node in self.network.values():
+                node.add_block(proposed_block)
+        else:
+            print("Block rejected by consensus.")
+
+# Example Usage
+if __name__ == "__main__":
+    consensus = SCPConsensus()
+
+    # Create nodes
+    node_a = Node("Node_A")
+    node_b = Node("Node_B")
+    node_c = Node("Node_C")
+    node_d = Node("Node_D")
+
+    # Register nodes
+    consensus.register_node(node_a)
+    consensus.register_node(node_b)
+    consensus.register_node(node_c)
+    consensus.register_node(node_d)
+
+    # Establish connections
+    consensus.add_connection("Node_A", "Node_B")
+    consensus.add_connection("Node_A", "Node_C")
+    consensus.add_connection("Node_B", "Node_C")
+    consensus.add_connection("Node_C", "Node_D")
+
+    # Propose and commit blocks
+    consensus.propose_and_commit("Node_A", "Block 1 Data")
+    consensus.propose_and_commit("Node_B", "Block 2 Data")
+
+    # Print blockchains
+    for node_id, node in consensus.network.items():
+        print(f"\nBlockchain for {node_id}:")
+        for block in node.blockchain:
+            print(f"Index: {block.index}, Hash: {block.hash}, Data: {block.data}")
