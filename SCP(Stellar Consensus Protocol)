@@ -2,9 +2,47 @@
 
 import hashlib
 import time
+import sqlite3
 from typing import List, Set
 from ecdsa import SigningKey, VerifyingKey, SECP256k1
 
+# Database Setup
+def initialize_database():
+    connection = sqlite3.connect("blockchain_keys.db")
+    cursor = connection.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS public_keys (
+            node_id TEXT PRIMARY KEY,
+            public_key TEXT
+        )
+    """)
+    connection.commit()
+    connection.close()
+
+def save_public_key(node_id: str, public_key: VerifyingKey):
+    connection = sqlite3.connect("blockchain_keys.db")
+    cursor = connection.cursor()
+    cursor.execute("""
+        INSERT OR REPLACE INTO public_keys (node_id, public_key) 
+        VALUES (?, ?)
+    """, (node_id, public_key.to_pem().decode()))
+    connection.commit()
+    connection.close()
+
+def get_public_key(node_id: str) -> VerifyingKey:
+    connection = sqlite3.connect("blockchain_keys.db")
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT public_key FROM public_keys WHERE node_id = ?
+    """, (node_id,))
+    result = cursor.fetchone()
+    connection.close()
+    if result:
+        return VerifyingKey.from_pem(result[0].encode())
+    else:
+        raise ValueError(f"Public key for node {node_id} not found.")
+
+# Blockchain Classes
 class Block:
     def __init__(self, index: int, timestamp: str, data: str, previous_hash: str):
         self.index = index
@@ -13,24 +51,27 @@ class Block:
         self.previous_hash = previous_hash
         self.hash = self.calculate_hash()
         self.signature = None  # Signature for block validation
+        self.proposer_id = None  # Node ID of the block proposer
 
     def calculate_hash(self) -> str:
         return hashlib.sha256(f"{self.index}{self.timestamp}{self.data}{self.previous_hash}".encode()).hexdigest()
 
-    def sign_block(self, private_key: SigningKey):
+    def sign_block(self, private_key: SigningKey, proposer_id: str):
         """
         Sign the block with the private key of the proposing node.
         """
         if not private_key:
             raise ValueError("Private key is required to sign the block.")
         self.signature = private_key.sign(self.hash.encode())
+        self.proposer_id = proposer_id
 
-    def verify_signature(self, public_key: VerifyingKey) -> bool:
+    def verify_signature(self) -> bool:
         """
-        Verify the block signature with the public key.
+        Verify the block signature using the public key from the database.
         """
-        if not self.signature:
-            raise ValueError("No signature found on this block.")
+        if not self.signature or not self.proposer_id:
+            raise ValueError("Block has no signature or proposer ID.")
+        public_key = get_public_key(self.proposer_id)
         return public_key.verify(self.signature, self.hash.encode())
 
 class Node:
@@ -41,9 +82,12 @@ class Node:
         self.neighbors: Set['Node'] = set()
         self.blockchain: List[Block] = [self.create_genesis_block()]
 
+        # Save public key to database
+        save_public_key(self.node_id, self.public_key)
+
     def create_genesis_block(self) -> Block:
         genesis_block = Block(0, time.time(), "Genesis Block", "0")
-        genesis_block.sign_block(self.private_key)  # Sign the genesis block
+        genesis_block.sign_block(self.private_key, self.node_id)
         return genesis_block
 
     def get_latest_block(self) -> Block:
@@ -56,7 +100,7 @@ class Node:
             data,
             self.get_latest_block().hash
         )
-        new_block.sign_block(self.private_key)  # Sign the new block
+        new_block.sign_block(self.private_key, self.node_id)
         return new_block
 
     def validate_block(self, block: Block) -> bool:
@@ -70,7 +114,7 @@ class Node:
         if block.hash != block.calculate_hash():
             print(f"Invalid hash for block {block.index}.")
             return False
-        if not block.verify_signature(block.public_key):
+        if not block.verify_signature():
             print(f"Invalid signature for block {block.index}.")
             return False
         return True
@@ -112,6 +156,10 @@ class SCPConsensus:
 
 # Example Usage
 if __name__ == "__main__":
+    # Initialize database
+    initialize_database()
+
+    # Create consensus system
     consensus = SCPConsensus()
 
     # Create nodes
