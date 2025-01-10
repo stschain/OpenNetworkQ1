@@ -27,6 +27,7 @@ query ($network: PiNetwork!, $address: String!, $limit: Int!, $offset: Int!, $fr
       external
       gasValue
       gas_value_usd: gasValue(in: USD)
+      gas_value_usd: gasValue(in: IDR)
     }
   }
 }
