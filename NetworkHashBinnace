@@ -1,0 +1,32 @@
+query ($network: PiNetwork!, $address: String!, $limit: Int!, $offset: Int!, $from: ISO8601DateTime, $till: ISO8601DateTime) {
+  Pi(network: $network) {
+    smartContractCalls(
+      options: {desc: "block.timestamp.time", limit: $limit, offset: $offset}
+      date: {since: $from, till: $till}
+      caller: {is: $address}
+    ) {
+      block {
+        timestamp {
+          time(format: "%Y-%m-%d %H:%M:%S")
+        }
+        height
+      }
+      smartContractMethod {
+        name
+        signatureHash
+      }
+      smartContract {
+        address {
+          address
+          annotation
+        }
+      }
+      transaction {
+        hash
+      }
+      external
+      gasValue
+      gas_value_usd: gasValue(in: USD)
+    }
+  }
+}
