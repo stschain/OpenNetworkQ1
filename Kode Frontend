@@ -1,0 +1,24 @@
+// pages/convert.js
+import { useState } from "react";
+import axios from "axios";
+
+export default function ConvertPage() {
+    const [from, setFrom] = useState("idr");
+    const [to, setTo] = useState("ethereum");
+    const [amount, setAmount] = useState("");
+    const [convertedAmount, setConvertedAmount] = useState(null);
+
+    const handleConvert = async () => {
+        const response = await axios.post("/api/convert", { from, to, amount });
+        setConvertedAmount(response.data.convertedAmount);
+    };
+
+    return (
+        <div>
+            <h1>Konversi Rupiah ke Crypto</h1>
+            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Masukkan jumlah" />
+            <button onClick={handleConvert}>Konversi</button>
+            {convertedAmount && <p>Hasil: {convertedAmount} {to.toUpperCase()}</p>}
+        </div>
+    );
+}
