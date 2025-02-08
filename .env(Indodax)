@@ -1,46 +1,70 @@
-PI_NETWORK_API_URL=https://api.minepi.com
-PI_PRIVATE_KEY=your-private-key
-INDODAX_API_URL=https://api.indodax.com
-
-const axios = require("axios");
 require("dotenv").config();
+const axios = require("axios");
 
 const piApiUrl = process.env.PI_NETWORK_API_URL;
 const indodaxApiUrl = process.env.INDODAX_API_URL;
 const privateKey = process.env.PI_PRIVATE_KEY;
 
-// Fungsi untuk mencatat aktivitas listing ke Pi Network
-async function recordListingOnPiNetwork() {
+// Fungsi untuk mencatat aktivitas transaksi Pi Network
+async function recordTransactionOnPiNetwork(sender, receiver, amount) {
     try {
-        // Data transaksi simulasi
         const transactionData = {
-            sender: "PiWalletAddressSender",
-            receiver: "IndodaxWalletAddress",
-            amount: 1000, // Jumlah token Pi yang ditransfer
+            sender: sender,
+            receiver: receiver,
+            amount: amount,
             message: "Listing Pi Network on Indodax",
         };
 
-        // Mengirim data transaksi ke Pi Network
-        const piResponse = await axios.post(`${piApiUrl}/transactions`, transactionData, {
+        const response = await axios.post(`${piApiUrl}/transactions`, transactionData, {
             headers: {
                 "Authorization": `Bearer ${privateKey}`,
+                "Content-Type": "application/json",
             },
         });
 
-        console.log("Transaction recorded on Pi Network:", piResponse.data);
-
-        // Mencatat aktivitas listing ke Indodax
-        const indodaxResponse = await axios.post(`${indodaxApiUrl}/listing`, {
-            token: "Pi Network Token",
-            symbol: "PI",
-            message: "Listing Pi Network on Indodax",
-        });
-
-        console.log("Response from Indodax API:", indodaxResponse.data);
+        console.log("Pi Network Transaction Response:", response.data);
+        return response.data;
     } catch (error) {
-        console.error("Error during integration:", error.response ? error.response.data : error.message);
+        console.error("Error in Pi Network transaction:", error.response ? error.response.data : error.message);
+        throw error;
     }
 }
 
-// Run Integration
-recordListingOnPiNetwork();
+// Fungsi untuk mencatat permintaan listing di Indodax
+async function requestListingOnIndodax() {
+    try {
+        const response = await axios.post(`${indodaxApiUrl}/market_info`, {
+            token: "Pi Network Token",
+            symbol: "PI",
+            message: "Request listing Pi Network on Indodax",
+        });
+
+        console.log("Indodax API Response:", response.data);
+        return response.data;
+    } catch (error) {
+        console.error("Error in Indodax listing request:", error.response ? error.response.data : error.message);
+        throw error;
+    }
+}
+
+// Fungsi utama untuk menjalankan integrasi
+async function integratePiWithIndodax() {
+    try {
+        const senderWallet = "PiWalletAddressSender"; // Ubah dengan alamat dompet asli
+        const receiverWallet = "IndodaxWalletAddress"; // Ubah dengan alamat dompet tujuan di Indodax
+        const amount = 1000; // Jumlah token yang akan ditransfer
+
+        console.log("Initiating transaction on Pi Network...");
+        await recordTransactionOnPiNetwork(senderWallet, receiverWallet, amount);
+
+        console.log("Requesting listing on Indodax...");
+        await requestListingOnIndodax();
+
+        console.log("Integration successful.");
+    } catch (error) {
+        console.error("Integration failed:", error.message);
+    }
+}
+
+// Jalankan fungsi integrasi
+integratePiWithIndodax();
