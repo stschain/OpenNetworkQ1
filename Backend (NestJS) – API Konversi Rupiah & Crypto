@@ -1,0 +1,17 @@
+Struktur Folder
+
+backend-conversion/
+├── src/
+│   ├── auth/
+│   ├── users/
+│   ├── conversion/    # Modul utama untuk konversi Rupiah ↔ Crypto
+│   ├── blockchain/
+│   ├── config/
+│   ├── main.ts
+│   ├── app.module.ts
+├── package.json
+└── .env
+
+Instalasi Dependensi
+
+npm install @nestjs/common @nestjs/core @nestjs/config axios ethers web3
