@@ -1,0 +1,17 @@
+Struktur Folder:
+
+backend-payment/
+├── src/
+│   ├── auth/
+│   ├── users/
+│   ├── payments/    # Modul utama untuk pembayaran merchant
+│   ├── blockchain/
+│   ├── config/
+│   ├── main.ts
+│   ├── app.module.ts
+├── package.json
+└── .env
+
+Instalasi Dependensi
+
+npm install @nestjs/common @nestjs/core @nestjs/config axios ethers web3
