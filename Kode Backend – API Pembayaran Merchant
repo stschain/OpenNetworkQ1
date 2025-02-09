@@ -1,0 +1,39 @@
+// src/payments/payments.service.ts
+import { Injectable } from '@nestjs/common';
+import axios from 'axios';
+import { ethers } from 'ethers';
+
+@Injectable()
+export class PaymentsService {
+  private provider = new ethers.JsonRpcProvider(process.env.BLOCKCHAIN_RPC);
+  private wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
+
+  async getExchangeRate(from: string, to: string): Promise<number> {
+    const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${from}&vs_currencies=${to}`);
+    return response.data[from][to];
+  }
+
+  async createPayment(merchantId: string, amount: number, currency: string) {
+    const rate = await this.getExchangeRate(currency, 'idr');
+    const convertedAmount = amount * rate;
+
+    // Simpan ke database
+    return {
+      merchantId,
+      amount,
+      currency,
+      convertedAmount,
+      status: 'PENDING'
+    };
+  }
+
+  async processPayment(paymentId: string, sender: string) {
+    // Simpan transaksi ke blockchain
+    const tx = await this.wallet.sendTransaction({
+      to: sender,
+      value: ethers.parseEther("0.01"), // Nominal contoh
+    });
+
+    return tx.wait();
+  }
+}
