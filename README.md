@@ -96,6 +96,30 @@ cd smart-contracts
 npx hardhat run scripts/deploy.js --network testnet
 
 
+
+🔧 Cara Menjalankan Aplikasi
+
+1️⃣ Clone Repositori
+
+git clone https://github.com/username/chainesia.git
+cd chainesia
+
+2️⃣ Jalankan Backend
+
+cd backend
+npm run start
+
+3️⃣ Jalankan Frontend
+
+cd frontend
+npm run dev
+
+4️⃣ Deploy Smart Contract
+
+cd smart-contracts
+npx hardhat run scripts/deploy.js --network testnet
+
+
 ---
 
 📖 Dokumentasi API
