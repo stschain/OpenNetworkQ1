@@ -1,0 +1,27 @@
+// src/conversion/conversion.service.ts
+import { Injectable } from '@nestjs/common';
+import axios from 'axios';
+import { ethers } from 'ethers';
+
+@Injectable()
+export class ConversionService {
+  private provider = new ethers.JsonRpcProvider(process.env.BLOCKCHAIN_RPC);
+  private wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
+
+  async getExchangeRate(from: string, to: string): Promise<number> {
+    const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${from}&vs_currencies=${to}`);
+    return response.data[from][to];
+  }
+
+  async convertAndSend(from: string, to: string, amount: number, recipient: string) {
+    const rate = await this.getExchangeRate(from, to);
+    const convertedAmount = amount * rate;
+
+    const tx = await this.wallet.sendTransaction({
+      to: recipient,
+      value: ethers.parseEther(convertedAmount.toString()),
+    });
+
+    return tx.wait();
+  }
+}

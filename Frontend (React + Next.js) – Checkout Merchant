@@ -1,0 +1,23 @@
+// pages/checkout.js
+import { useState } from "react";
+import { createPayment } from "../sdk/chainesia-sdk";
+
+export default function Checkout() {
+    const [amount, setAmount] = useState("");
+    const [currency, setCurrency] = useState("idr");
+    const [paymentData, setPaymentData] = useState(null);
+
+    const handlePayment = async () => {
+        const response = await createPayment("MERCHANT_123", amount, currency);
+        setPaymentData(response);
+    };
+
+    return (
+        <div>
+            <h1>Checkout Merchant</h1>
+            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Masukkan jumlah" />
+            <button onClick={handlePayment}>Bayar</button>
+            {paymentData && <p>Status: {paymentData.status}</p>}
+        </div>
+    );
+}

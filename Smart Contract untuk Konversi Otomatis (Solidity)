@@ -1,0 +1,27 @@
+// contracts/ChainesiaExchange.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+interface IPriceOracle {
+    function getRate(string memory from, string memory to) external view returns (uint256);
+}
+
+contract ChainesiaExchange {
+    IPriceOracle public priceOracle;
+
+    constructor(address _priceOracle) {
+        priceOracle = IPriceOracle(_priceOracle);
+    }
+
+    event Swap(address indexed user, string fromCurrency, string toCurrency, uint256 amount, uint256 convertedAmount);
+
+    function swap(string memory from, string memory to, uint256 amount) public payable {
+        uint256 rate = priceOracle.getRate(from, to);
+        require(rate > 0, "Harga tidak tersedia");
+
+        uint256 convertedAmount = amount * rate;
+        payable(msg.sender).transfer(convertedAmount);
+
+        emit Swap(msg.sender, from, to, amount, convertedAmount);
+    }
+}

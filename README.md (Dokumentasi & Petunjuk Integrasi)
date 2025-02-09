@@ -1,0 +1,75 @@
+# CHAINESIA Modular Integration
+
+Proyek ini menyediakan modul-modul yang dapat diintegrasikan ke dalam sistem Anda untuk mendapatkan fitur-fitur CHAINESIA, antara lain:
+
+- **Backend API Modul**  
+  Berisi layanan untuk autentikasi, pembayaran, dan integrasi blockchain (menggunakan NestJS).  
+  > Pastikan untuk mengonfigurasi file `.env` dengan variabel seperti `BLOCKCHAIN_RPC`, `PRIVATE_KEY`, `ENCRYPTION_KEY`, dan `ENCRYPTION_IV`.
+
+- **Smart Contract**  
+  Terdiri dari kontrak `ChainesiaEscrow.sol` yang menyediakan fitur escrow untuk transaksi yang aman di blockchain.  
+  > Gunakan Hardhat untuk menyusun dan mendistribusikan kontrak ke jaringan yang diinginkan.
+
+- **SDK Merchant**  
+  Library JavaScript untuk membantu merchant mengintegrasikan sistem pembayaran CHAINESIA ke dalam aplikasi mereka.  
+  > Sesuaikan `CHAINESIA_API_URL` dengan endpoint backend Anda.
+
+## Instalasi dan Penggunaan
+
+### Backend Modul
+1. Pindah ke folder `backend` dan instal dependensi:
+   ```bash
+   cd backend
+   npm install
+
+2. Sesuaikan file .env dengan konfigurasi Anda.
+
+
+3. Integrasikan modul ini ke dalam sistem back-end Anda (atau gunakan sebagai microservice).
+
+
+
+Smart Contracts
+
+1. Pindah ke folder smart-contracts dan instal dependensi:
+
+cd smart-contracts
+npm install
+
+
+2. Deploy kontrak menggunakan Hardhat:
+
+npx hardhat run scripts/deploy.js --network <nama_network>
+
+
+
+SDK Merchant
+
+1. Di dalam folder sdk, instal dependensi:
+
+cd sdk
+npm install
+
+
+2. Impor modul SDK ke dalam proyek front-end atau back-end merchant Anda:
+
+import { createPayment, checkPaymentStatus } from 'chainesia-sdk';
+
+
+
+
+---
+
+Catatan
+
+Proyek ini disusun secara modular sehingga Anda tidak diwajibkan untuk menjadikannya sebagai satu aplikasi utuh.
+
+Anda dapat mengintegrasikan modul-modul ini secara terpisah sesuai kebutuhan sistem Anda.
+
+Pastikan untuk melakukan pengujian dan penyesuaian konfigurasi agar modul dapat berjalan sesuai dengan lingkungan produksi atau pengembangan Anda.
+
+
+
+---
+
+© 2025 CHAINESIA – Solusi Pembayaran Digital Terintegrasi
