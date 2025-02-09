@@ -1,0 +1,49 @@
+// contracts/ChainesiaEscrow.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+contract ChainesiaEscrow {
+    struct Payment {
+        address buyer;
+        address merchant;
+        uint256 amount;
+        bool completed;
+    }
+
+    mapping(uint256 => Payment) public payments;
+    uint256 public paymentCount;
+
+    event PaymentCreated(uint256 paymentId, address buyer, address merchant, uint256 amount);
+    event PaymentCompleted(uint256 paymentId);
+    event PaymentRefunded(uint256 paymentId);
+
+    function createPayment(address merchant) external payable {
+        require(msg.value > 0, "Payment must be greater than zero");
+
+        payments[paymentCount] = Payment(msg.sender, merchant, msg.value, false);
+        emit PaymentCreated(paymentCount, msg.sender, merchant, msg.value);
+
+        paymentCount++;
+    }
+
+    function completePayment(uint256 paymentId) external {
+        Payment storage payment = payments[paymentId];
+        require(msg.sender == payment.buyer, "Only buyer can confirm");
+        require(!payment.completed, "Already completed");
+
+        payable(payment.merchant).transfer(payment.amount);
+        payment.completed = true;
+
+        emit PaymentCompleted(paymentId);
+    }
+
+    function refundPayment(uint256 paymentId) external {
+        Payment storage payment = payments[paymentId];
+        require(!payment.completed, "Cannot refund completed payment");
+
+        payable(payment.buyer).transfer(payment.amount);
+        payment.completed = true;
+
+        emit PaymentRefunded(paymentId);
+    }
+}
