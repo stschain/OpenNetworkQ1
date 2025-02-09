@@ -1,0 +1,19 @@
+// sdk/chainesia-sdk.js
+import axios from "axios";
+import { ethers } from "ethers";
+
+const API_URL = "https://api.chainesia.com";
+
+export async function createPayment(merchantId, amount, currency) {
+    const response = await axios.post(`${API_URL}/payments`, {
+        merchantId,
+        amount,
+        currency
+    });
+    return response.data;
+}
+
+export async function checkPaymentStatus(paymentId) {
+    const response = await axios.get(`${API_URL}/payments/${paymentId}`);
+    return response.data;
+}
